@@ -1,0 +1,7 @@
+name = Preingest Transformations
+description = Allows application of a custom xslt to modify output of form builder.
+dependencies[] = islandora
+
+package = Islandora
+version = 7.x-$Format:%h$-dev
+core = 7.x

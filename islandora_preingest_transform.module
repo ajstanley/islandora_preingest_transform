@@ -1,0 +1,54 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function islandora_preingest_transform_menu() {
+  return array(
+    'admin/islandora/islandora_preingest_transform' => array(
+      'title' => 'Islandora MODS Transform',
+      'description' => 'Configuration for the Islandora Preingest Transformation module.',
+      'page callback' => 'drupal_get_form',
+      'access arguments' => array('administer site configuration'),
+      'page arguments' => array('islandora_transform_admin'),
+      'file' => 'includes/admin.form.inc',
+      'type' => MENU_NORMAL_ITEM,
+    )
+  );
+}
+
+/**
+ * Imlements hook_transform_islandora_object_alter
+ * @param AbstractFedoraObject $object
+ * @param array $context
+ */
+function islandora_preingest_transform_islandora_object_alter(AbstractFedoraObject $object, array &$context) {
+  if ($object['MODS']) {
+    $MODS = $object['MODS']->content;
+    $new_mods = islandora_preingest_transform_apply_xslt($MODS);
+    if ($new_mods) {
+      $object['MODS']->content = $new_mods;
+    }
+  }
+}
+
+/**
+ * Takes MODS string as input, and applies transformations
+ * @param string $MODS
+ * @return string
+ */
+function islandora_preingest_transform_apply_xslt($MODS) {
+  $proc = new XsltProcessor();
+  $xsl = new DomDocument();
+  $xslt = variable_get('islandora_mods_transform_xslt', FALSE);
+  if (!$xslt) {
+    return FALSE;
+  }
+  $xsl->loadXML($xslt);
+  $input = new DomDocument();
+  $input->loadXML(trim($MODS));
+  $xsl = $proc->importStylesheet($xsl);
+  $newdom = $proc->transformToDoc($input);
+  $content = $newdom->saveXML();
+  return $content;
+}
